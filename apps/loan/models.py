@@ -1,4 +1,4 @@
-from decimal import Decimal, getcontext
+from decimal import Decimal, getcontext, ROUND_HALF_UP  
 
 
 from django.db import models
@@ -19,7 +19,6 @@ class Loan(TimeStampModel):
 
 
     user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_loans')
-    # loan = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
     loan_name = models.CharField(max_length=255)
     principal_amount = models.DecimalField(max_digits=15, decimal_places=2)
     interest_rate = models.DecimalField(max_digits=5, decimal_places=2)
@@ -28,6 +27,13 @@ class Loan(TimeStampModel):
     remaining_balance = models.DecimalField(max_digits=15, decimal_places=2)
     status = models.CharField(max_length=1, choices=LOAN_STATUS.choices, default=LOAN_STATUS.ACTIVE)
     notes = models.TextField(null=True, blank=True)
+
+    ##for loan payments
+    loan = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='loan_payments')
+    loan_payment_date = models.DateField(null=True, blank=True)
+    loan_payment_amount = models.DecimalField(max_digits=15, decimal_places=2, null=True, blank=True)
+    is_payment = models.BooleanField(default=False, null=True)
+
 
     def __str__(self):
         return f"{self.loan_name} - {self.principal_amount}"
@@ -45,7 +51,7 @@ class Loan(TimeStampModel):
 
             emi =  p * r * ((1 +r ) ** n) / (((1 + r) ** n) - 1)
 
-        return emi
+        return emi.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
 
     def save(self, *args, **kwargs):
         if not self.pk:
@@ -59,6 +65,7 @@ class Loan(TimeStampModel):
             self.status = self.LOAN_STATUS.ACTIVE
 
 
+        self.full_clean()
         return super().save(*args, **kwargs)
     
     def clean(self):

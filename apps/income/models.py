@@ -13,7 +13,7 @@ class STATUSCHOICES(models.TextChoices):
 
 
 class Income(TimeStampModel):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_incomes')
     source_name = models.CharField(max_length=255)
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     date_received = models.DateField()
@@ -30,7 +30,7 @@ class Income(TimeStampModel):
 
 
 class ExpenseCategory(TimeStampModel):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_expense_categories')
     name = models.CharField(max_length=255)
     description = models.TextField(null=True, blank=True)
 
@@ -44,7 +44,7 @@ class ExpenseCategory(TimeStampModel):
 
 
 class Expense(TimeStampModel):
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='user_expenses')
     category = models.ForeignKey(ExpenseCategory, on_delete=models.CASCADE)
     amount = models.DecimalField(max_digits=15, decimal_places=2)
     due_date = models.DateField()

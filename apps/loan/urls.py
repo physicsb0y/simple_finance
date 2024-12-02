@@ -11,6 +11,7 @@ router.register('', views.LoanViwSet, basename='loan')
 
 app_name = 'loan'
 urlpatterns = [
-    path('', include(router.urls))
+    path('', include(router.urls)),
+    path('reports', views.FinancialReportsDetailAPI.as_view(), name='reports')
 ]
 
