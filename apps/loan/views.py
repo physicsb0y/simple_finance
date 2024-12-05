@@ -1,11 +1,13 @@
+from datetime import date
 from rest_framework import viewsets, filters, response, permissions, status, views
 from rest_framework.decorators import action
 
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 
 from django_filters.rest_framework import DjangoFilterBackend
 
 from django.db.models import Sum, F, Prefetch
+from django.utils.dateparse import parse_date
 
 from apps.income.models import Expense, Income
 
@@ -50,8 +52,39 @@ class FinancialReportsDetailAPI(views.APIView):
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = FinanceReportSerializer
 
+
+    @extend_schema(
+            parameters=[
+                OpenApiParameter(
+                    name='end_date',
+                    type=date,
+                    location=OpenApiParameter.QUERY,
+                    description='End date for filtering (YYYY-MM-DD)'
+                ),
+                OpenApiParameter(
+                    name='start_date',
+                    type=date,
+                    location=OpenApiParameter.QUERY,
+                    description='Start date for filtering (YYYY-MM-DD)'
+                )
+            ]
+    )
     def get(self, request):
-        print("Get method called")
         user = request.user
-        serializer = self.serializer_class(instance=user)
+
+        start_date = request.query_params.get('start_date', None)
+        end_date = request.query_params.get('end_date', None)
+
+        if start_date:
+            start_date = parse_date(start_date)
+        if end_date:
+            end_date = parse_date(end_date)
+
+        serializer = self.serializer_class(
+            instance=user,
+            context={
+                'start_date': start_date,
+                'end_date': end_date
+            }
+        )
         return response.Response(serializer.data)

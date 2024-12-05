@@ -1,8 +1,9 @@
-from datetime import date
+from datetime import date, datetime
 
 from rest_framework import serializers
 
-from django.db.models import Sum, Prefetch, F
+from django.db.models import Sum, Prefetch, F, Q
+from django.utils import timezone
 
 from apps.income.models import Expense, Income
 
@@ -102,9 +103,26 @@ class FinanceReportSerializer(serializers.Serializer):
 
     def to_representation(self, instance):
         user = instance
-        incomes = Income.objects.filter(
-                user=user
-            ).values(
+
+        start_date = self.context.get('start_date', None)
+        end_date = self.context.get('end_date', None)
+
+        if start_date:
+            start_date = timezone.make_aware(
+                datetime.combine(start_date, datetime.min.time())
+            )
+        if end_date:
+            end_date = timezone.make_aware(
+                datetime.combine(end_date, datetime.max.time())
+            )
+
+        incomes = Income.objects.filter(user=user)
+        if start_date and end_date:
+            incomes = incomes.filter(
+                date_received__gte=start_date,
+                date_received__lte=end_date
+            )
+        incomes = incomes.values(
                 'source_name', 
                 'amount', 
                 'date_received', 
@@ -113,9 +131,13 @@ class FinanceReportSerializer(serializers.Serializer):
             )
         total_income = sum(income['amount'] for income in incomes) if incomes else 0
 
-        expenses = Expense.objects.filter(
-            user=user
-        ).values(
+        expenses = Expense.objects.filter(user=user)
+        if start_date and end_date:
+            expenses = expenses.filter(
+                due_date__gte=start_date,
+                due_date__lte=end_date
+            )
+        expenses = expenses.values(
             'category__name',
             'amount',
             'due_date',
@@ -127,7 +149,14 @@ class FinanceReportSerializer(serializers.Serializer):
         loans = Loan.objects.filter(
             user=user,
             is_payment=False
-        ).prefetch_related(
+        ).distinct()
+        if start_date and end_date:
+            loans = loans.filter(
+                Q(created_at__gte=start_date, created_at__lte=end_date) |
+                Q(loan_payments__loan_payment_date__gte=start_date, 
+                  loan_payments__loan_payment_date__lte=end_date)
+            )
+        loans = loans.prefetch_related(
             Prefetch(
                 'loan_payments',
                 queryset=Loan.objects.filter(is_payment=True).only(
