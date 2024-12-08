@@ -63,6 +63,8 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "financial_system.middleware.custom_middleware.RequestLoggingMiddleware",
+    "financial_system.middleware.custom_middleware.GlobalErrorHandlingMiddleware"
 ]
 
 ROOT_URLCONF = "financial_system.urls"
@@ -169,4 +171,33 @@ CACHES = {
         "BACKEND": "django.core.cache.backends.redis.RedisCache",
         "LOCATION": env.str("REDIS_URL")
     }
+}
+
+
+
+
+
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "formatters": {
+        "verbose": {
+            "format": "%(levelname)s %(asctime)s %(module)s "
+            "%(process)d %(thread)d %(message)s"
+        }
+    },
+    "handlers": {
+        "console": {
+            "level": "DEBUG",
+            "class": "logging.StreamHandler",
+            "formatter": "verbose",
+        },
+        "file": {
+            "level": "INFO",
+            "class": "logging.FileHandler",
+            "filename": "finance.log",
+            "formatter": "verbose"
+        }
+    },
+    "root": {"level": "INFO", "handlers": ["console", "file"]},
 }

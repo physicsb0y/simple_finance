@@ -23,7 +23,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     
     path('', include('apps.income.urls')),
-    path('loan', include('apps.loan.urls')),
+    path('loan/', include('apps.loan.urls')),
     path('accounts/', include('apps.users.urls')),
 
     ##SWAGGER URLS:
